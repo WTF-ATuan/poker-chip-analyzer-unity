@@ -43,6 +43,58 @@ namespace PokerChipAnalyzer.Tests
         }
         
         /// <summary>
+        /// Force setup components regardless of auto setup setting
+        /// </summary>
+        [ContextMenu("Force Setup Components")]
+        public void ForceSetupComponents()
+        {
+            Debug.Log("[PhotoTestSetup] Force setting up components...");
+            SetupComponents();
+            
+            if (bindExistingButtons)
+            {
+                BindExistingButtons();
+            }
+            
+            Debug.Log("[PhotoTestSetup] Force setup complete!");
+        }
+        
+        /// <summary>
+        /// Check current setup status
+        /// </summary>
+        [ContextMenu("Check Setup Status")]
+        public void CheckSetupStatus()
+        {
+            Debug.Log("=== PhotoTestSetup Status ===");
+            Debug.Log($"Auto Setup: {autoSetup}");
+            Debug.Log($"Create New UI: {createNewUI}");
+            Debug.Log($"Bind Existing Buttons: {bindExistingButtons}");
+            
+            // Check components
+            var selector = FindFirstObjectByType<StackRegionSelector>();
+            var estimator = FindFirstObjectByType<StackHeightEstimator>();
+            var testManager = FindFirstObjectByType<PhotoTestManager>();
+            var canvas = FindFirstObjectByType<Canvas>();
+            
+            Debug.Log($"Canvas found: {canvas != null}");
+            Debug.Log($"StackRegionSelector found: {selector != null}");
+            Debug.Log($"StackHeightEstimator found: {estimator != null}");
+            Debug.Log($"PhotoTestManager found: {testManager != null}");
+            
+            // Check button bindings
+            if (addRegionButton != null)
+            {
+                Debug.Log($"Add Region Button: {addRegionButton.name} (Listeners: {addRegionButton.onClick.GetPersistentEventCount()})");
+            }
+            else
+            {
+                Debug.Log("Add Region Button: Not assigned");
+            }
+            
+            Debug.Log("=== End Status ===");
+        }
+        
+        /// <summary>
         /// Bind manually assigned buttons
         /// </summary>
         [ContextMenu("Bind Manual Buttons")]
