@@ -227,8 +227,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4966719baa26e4b0e8231a24d9bd491a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_FocusMode: 1
-  m_LightEstimationMode: 0
+  m_FocusMode: -1
+  m_LightEstimationMode: -1
   m_AutoFocus: 1
   m_ImageStabilization: 0
   m_LightEstimation: 0
@@ -434,12 +434,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa37d8f4387df47648d503a2d7916875, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  arSession: {fileID: 0}
-  xrOrigin: {fileID: 0}
-  arCameraManager: {fileID: 0}
-  arPlaneManager: {fileID: 0}
-  arPointCloudManager: {fileID: 0}
-  arMeshManager: {fileID: 0}
+  arSession: {fileID: 232206976}
+  xrOrigin: {fileID: 232206972}
+  arCameraManager: {fileID: 24577142}
+  arPlaneManager: {fileID: 232206974}
+  arPointCloudManager: {fileID: 232206973}
+  arMeshManager: {fileID: 51669658}
   enableDebugLogs: 1
 --- !u!4 &232206978
 Transform:
@@ -658,56 +658,6 @@ MonoBehaviour:
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 1
---- !u!1 &792538828
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 792538830}
-  - component: {fileID: 792538829}
-  m_Layer: 0
-  m_Name: 'Scene Setup '
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &792538829
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 792538828}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8f7a71e6620914f99aa53aa46e27617d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  arSessionOriginPrefab: {fileID: 0}
-  arCameraPrefab: {fileID: 0}
-  hudCanvasPrefab: {fileID: 0}
-  resultsCanvasPrefab: {fileID: 0}
-  autoSetup: 1
-  enableDebugLogs: 1
---- !u!4 &792538830
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 792538828}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5.48549, y: -9.04793, z: 13.05901}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -1088,7 +1038,6 @@ SceneRoots:
   - {fileID: 410087041}
   - {fileID: 832575519}
   - {fileID: 340202191}
-  - {fileID: 792538830}
   - {fileID: 232206978}
   - {fileID: 1416667979}
   - {fileID: 1809659785}
