@@ -14,13 +14,171 @@ namespace PokerChipAnalyzer.Tests
         [Header("Quick Setup")]
         [SerializeField] private bool autoSetup = true;
         [SerializeField] private bool enablePhotoMode = true;
+        [SerializeField] private bool createNewUI = true; // 是否創建新 UI
+        [SerializeField] private bool bindExistingButtons = false; // 是否綁定現有按鈕
+        
+        [Header("Manual Button Binding")]
+        [SerializeField] private Button addRegionButton;
+        [SerializeField] private Button clearAllButton;
+        [SerializeField] private Button testHeightButton;
+        [SerializeField] private Button nextPhotoButton;
         
         private void Start()
         {
             if (autoSetup)
             {
-                SetupPhotoTest();
+                if (createNewUI)
+                {
+                    SetupPhotoTest();
+                }
+                else if (bindExistingButtons)
+                {
+                    BindExistingButtons();
+                }
+                else
+                {
+                    SetupComponents();
+                }
             }
+        }
+        
+        /// <summary>
+        /// Bind manually assigned buttons
+        /// </summary>
+        [ContextMenu("Bind Manual Buttons")]
+        public void BindManualButtons()
+        {
+            Debug.Log("[PhotoTestSetup] Binding manually assigned buttons...");
+            
+            // Bind Add Region button
+            if (addRegionButton != null)
+            {
+                addRegionButton.onClick.RemoveAllListeners();
+                addRegionButton.onClick.AddListener(() => {
+                    var selector = FindFirstObjectByType<StackRegionSelector>();
+                    if (selector != null) 
+                    {
+                        selector.StartRegionSelection();
+                        Debug.Log("[PhotoTestSetup] Started region selection via manual button");
+                    }
+                });
+                Debug.Log($"[PhotoTestSetup] Bound 'Add Region' to button: {addRegionButton.name}");
+            }
+            
+            // Bind Clear All button
+            if (clearAllButton != null)
+            {
+                clearAllButton.onClick.RemoveAllListeners();
+                clearAllButton.onClick.AddListener(() => {
+                    var selector = FindFirstObjectByType<StackRegionSelector>();
+                    if (selector != null) 
+                    {
+                        selector.ClearAllRegions();
+                        Debug.Log("[PhotoTestSetup] Cleared all regions via manual button");
+                    }
+                });
+                Debug.Log($"[PhotoTestSetup] Bound 'Clear All' to button: {clearAllButton.name}");
+            }
+            
+            // Bind Test Height button
+            if (testHeightButton != null)
+            {
+                testHeightButton.onClick.RemoveAllListeners();
+                testHeightButton.onClick.AddListener(() => {
+                    TestHeightEstimation();
+                });
+                Debug.Log($"[PhotoTestSetup] Bound 'Test Height' to button: {testHeightButton.name}");
+            }
+            
+            // Bind Next Photo button
+            if (nextPhotoButton != null)
+            {
+                nextPhotoButton.onClick.RemoveAllListeners();
+                nextPhotoButton.onClick.AddListener(() => {
+                    var testManager = FindFirstObjectByType<PhotoTestManager>();
+                    if (testManager != null) 
+                    {
+                        testManager.NextPhoto();
+                        Debug.Log("[PhotoTestSetup] Switched to next photo via manual button");
+                    }
+                });
+                Debug.Log($"[PhotoTestSetup] Bound 'Next Photo' to button: {nextPhotoButton.name}");
+            }
+            
+            // Setup components
+            SetupComponents();
+            
+            Debug.Log("[PhotoTestSetup] Manual button binding complete!");
+        }
+        
+        /// <summary>
+        /// Bind existing buttons without creating new UI
+        /// </summary>
+        [ContextMenu("Bind Existing Buttons")]
+        public void BindExistingButtons()
+        {
+            Debug.Log("[PhotoTestSetup] Binding existing buttons...");
+            
+            // Find existing buttons by name or tag
+            Button[] allButtons = FindObjectsByType<Button>(FindObjectsSortMode.None);
+            
+            foreach (Button button in allButtons)
+            {
+                string buttonName = button.name.ToLower();
+                
+                if (buttonName.Contains("add") && buttonName.Contains("region"))
+                {
+                    button.onClick.RemoveAllListeners();
+                    button.onClick.AddListener(() => {
+                        var selector = FindFirstObjectByType<StackRegionSelector>();
+                        if (selector != null) 
+                        {
+                            selector.StartRegionSelection();
+                            Debug.Log("[PhotoTestSetup] Started region selection via existing button");
+                        }
+                    });
+                    Debug.Log($"[PhotoTestSetup] Bound 'Add Region' to button: {button.name}");
+                }
+                else if (buttonName.Contains("clear") && buttonName.Contains("all"))
+                {
+                    button.onClick.RemoveAllListeners();
+                    button.onClick.AddListener(() => {
+                        var selector = FindFirstObjectByType<StackRegionSelector>();
+                        if (selector != null) 
+                        {
+                            selector.ClearAllRegions();
+                            Debug.Log("[PhotoTestSetup] Cleared all regions via existing button");
+                        }
+                    });
+                    Debug.Log($"[PhotoTestSetup] Bound 'Clear All' to button: {button.name}");
+                }
+                else if (buttonName.Contains("test") && buttonName.Contains("height"))
+                {
+                    button.onClick.RemoveAllListeners();
+                    button.onClick.AddListener(() => {
+                        TestHeightEstimation();
+                    });
+                    Debug.Log($"[PhotoTestSetup] Bound 'Test Height' to button: {button.name}");
+                }
+                else if (buttonName.Contains("next") && buttonName.Contains("photo"))
+                {
+                    button.onClick.RemoveAllListeners();
+                    button.onClick.AddListener(() => {
+                        var testManager = FindFirstObjectByType<PhotoTestManager>();
+                        if (testManager != null) 
+                        {
+                            testManager.NextPhoto();
+                            Debug.Log("[PhotoTestSetup] Switched to next photo via existing button");
+                        }
+                    });
+                    Debug.Log($"[PhotoTestSetup] Bound 'Next Photo' to button: {button.name}");
+                }
+            }
+            
+            // Setup components
+            SetupComponents();
+            
+            Debug.Log("[PhotoTestSetup] Button binding complete!");
         }
         
         /// <summary>
