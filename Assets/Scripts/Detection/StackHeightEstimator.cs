@@ -71,7 +71,7 @@ namespace PokerChipAnalyzer.Detection
         /// <returns>Height estimation result</returns>
         public HeightEstimationResult EstimateHeight(Rect region)
         {
-            if (depthProvider == null)
+            if (depthProvider == null && !useSimulatedData)
             {
                 return new HeightEstimationResult { isValid = false };
             }
