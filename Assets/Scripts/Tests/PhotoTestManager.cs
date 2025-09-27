@@ -290,6 +290,55 @@ namespace PokerChipAnalyzer.Tests
         }
         
         /// <summary>
+        /// Create a simple test texture for testing
+        /// </summary>
+        [ContextMenu("Create Test Texture")]
+        public void CreateTestTexture()
+        {
+            // Create a simple test texture
+            Texture2D testTexture = new Texture2D(512, 512);
+            Color[] pixels = new Color[512 * 512];
+            
+            // Create a simple pattern (simulating poker chips)
+            for (int y = 0; y < 512; y++)
+            {
+                for (int x = 0; x < 512; x++)
+                {
+                    // Create a simple chip stack pattern
+                    float centerX = 256f;
+                    float centerY = 256f;
+                    float distance = Vector2.Distance(new Vector2(x, y), new Vector2(centerX, centerY));
+                    
+                    if (distance < 50f)
+                    {
+                        pixels[y * 512 + x] = Color.red; // Chip stack
+                    }
+                    else if (distance < 100f)
+                    {
+                        pixels[y * 512 + x] = Color.green; // Table
+                    }
+                    else
+                    {
+                        pixels[y * 512 + x] = Color.blue; // Background
+                    }
+                }
+            }
+            
+            testTexture.SetPixels(pixels);
+            testTexture.Apply();
+            
+            // Set as test photo
+            testPhotos = new Texture2D[] { testTexture };
+            expectedChipCounts = new int[] { 10 }; // Expected 10 chips
+            
+            // Show the test texture
+            ShowCurrentPhoto();
+            
+            if (enableDebugLogs)
+                Debug.Log("[PhotoTestManager] Created test texture with simulated chip stack");
+        }
+        
+        /// <summary>
         /// Export test results
         /// </summary>
         [ContextMenu("Export Test Results")]

@@ -61,13 +61,29 @@ namespace PokerChipAnalyzer.Tests
             
             // Create buttons
             CreateButton(controlPanelGO, "Add Region", new Vector2(0.1f, 0.5f), () => {
-                var selector = FindObjectOfType<StackRegionSelector>();
-                if (selector != null) selector.StartRegionSelection();
+                var selector = FindFirstObjectByType<StackRegionSelector>();
+                if (selector != null) 
+                {
+                    selector.StartRegionSelection();
+                    Debug.Log("[PhotoTestSetup] Started region selection");
+                }
+                else
+                {
+                    Debug.LogWarning("[PhotoTestSetup] StackRegionSelector not found");
+                }
             });
             
             CreateButton(controlPanelGO, "Clear All", new Vector2(0.3f, 0.5f), () => {
-                var selector = FindObjectOfType<StackRegionSelector>();
-                if (selector != null) selector.ClearAllRegions();
+                var selector = FindFirstObjectByType<StackRegionSelector>();
+                if (selector != null) 
+                {
+                    selector.ClearAllRegions();
+                    Debug.Log("[PhotoTestSetup] Cleared all regions");
+                }
+                else
+                {
+                    Debug.LogWarning("[PhotoTestSetup] StackRegionSelector not found");
+                }
             });
             
             CreateButton(controlPanelGO, "Test Height", new Vector2(0.5f, 0.5f), () => {
@@ -75,8 +91,16 @@ namespace PokerChipAnalyzer.Tests
             });
             
             CreateButton(controlPanelGO, "Next Photo", new Vector2(0.7f, 0.5f), () => {
-                var testManager = FindObjectOfType<PhotoTestManager>();
-                if (testManager != null) testManager.NextPhoto();
+                var testManager = FindFirstObjectByType<PhotoTestManager>();
+                if (testManager != null) 
+                {
+                    testManager.NextPhoto();
+                    Debug.Log("[PhotoTestSetup] Switched to next photo");
+                }
+                else
+                {
+                    Debug.LogWarning("[PhotoTestSetup] PhotoTestManager not found");
+                }
             });
             
             // Create info text
@@ -140,47 +164,101 @@ namespace PokerChipAnalyzer.Tests
         /// </summary>
         private void SetupComponents()
         {
+            Canvas canvas = FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                Debug.LogError("[PhotoTestSetup] Canvas not found! Make sure to call SetupPhotoTest() first.");
+                return;
+            }
+            
             // Create StackRegionSelector if not exists
-            if (FindObjectOfType<StackRegionSelector>() == null)
+            StackRegionSelector selector = FindFirstObjectByType<StackRegionSelector>();
+            if (selector == null)
             {
                 GameObject selectorGO = new GameObject("StackRegionSelector");
-                StackRegionSelector selector = selectorGO.AddComponent<StackRegionSelector>();
-                
-                // Setup canvas reference
-                Canvas canvas = FindObjectOfType<Canvas>();
-                if (canvas != null)
+                selector = selectorGO.AddComponent<StackRegionSelector>();
+                Debug.Log("[PhotoTestSetup] Created StackRegionSelector");
+            }
+            
+            // Setup canvas reference for StackRegionSelector
+            if (selector != null)
+            {
+                // Use reflection to set private field (for testing)
+                var field = typeof(StackRegionSelector).GetField("selectionCanvas", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (field != null)
                 {
-                    // Use reflection to set private field (for testing)
-                    var field = typeof(StackRegionSelector).GetField("selectionCanvas", 
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (field != null)
-                    {
-                        field.SetValue(selector, canvas.GetComponent<RectTransform>());
-                    }
+                    field.SetValue(selector, canvas.GetComponent<RectTransform>());
+                    Debug.Log("[PhotoTestSetup] Set selectionCanvas for StackRegionSelector");
                 }
             }
             
             // Create StackHeightEstimator if not exists
-            if (FindObjectOfType<StackHeightEstimator>() == null)
+            StackHeightEstimator estimator = FindFirstObjectByType<StackHeightEstimator>();
+            if (estimator == null)
             {
                 GameObject estimatorGO = new GameObject("StackHeightEstimator");
-                StackHeightEstimator estimator = estimatorGO.AddComponent<StackHeightEstimator>();
-                
-                // Enable simulated data for testing
+                estimator = estimatorGO.AddComponent<StackHeightEstimator>();
+                Debug.Log("[PhotoTestSetup] Created StackHeightEstimator");
+            }
+            
+            // Enable simulated data for testing
+            if (estimator != null)
+            {
                 var field = typeof(StackHeightEstimator).GetField("useSimulatedData", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (field != null)
                 {
                     field.SetValue(estimator, true);
+                    Debug.Log("[PhotoTestSetup] Enabled simulated data for StackHeightEstimator");
                 }
             }
             
             // Create PhotoTestManager if not exists
-            if (FindObjectOfType<PhotoTestManager>() == null)
+            PhotoTestManager testManager = FindFirstObjectByType<PhotoTestManager>();
+            if (testManager == null)
             {
                 GameObject testManagerGO = new GameObject("PhotoTestManager");
-                PhotoTestManager testManager = testManagerGO.AddComponent<PhotoTestManager>();
+                testManager = testManagerGO.AddComponent<PhotoTestManager>();
+                Debug.Log("[PhotoTestSetup] Created PhotoTestManager");
             }
+            
+            // Setup PhotoTestManager references
+            if (testManager != null)
+            {
+                // Set photo display reference
+                var photoDisplayField = typeof(PhotoTestManager).GetField("photoDisplay", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (photoDisplayField != null)
+                {
+                    RawImage photoImage = canvas.GetComponentInChildren<RawImage>();
+                    if (photoImage != null)
+                    {
+                        photoDisplayField.SetValue(testManager, photoImage);
+                        Debug.Log("[PhotoTestSetup] Set photoDisplay for PhotoTestManager");
+                    }
+                }
+                
+                // Set region selector reference
+                var regionSelectorField = typeof(PhotoTestManager).GetField("regionSelector", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (regionSelectorField != null && selector != null)
+                {
+                    regionSelectorField.SetValue(testManager, selector);
+                    Debug.Log("[PhotoTestSetup] Set regionSelector for PhotoTestManager");
+                }
+                
+                // Set height estimator reference
+                var heightEstimatorField = typeof(PhotoTestManager).GetField("heightEstimator", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (heightEstimatorField != null && estimator != null)
+                {
+                    heightEstimatorField.SetValue(testManager, estimator);
+                    Debug.Log("[PhotoTestSetup] Set heightEstimator for PhotoTestManager");
+                }
+            }
+            
+            Debug.Log("[PhotoTestSetup] Component setup complete!");
         }
         
         /// <summary>
@@ -188,19 +266,25 @@ namespace PokerChipAnalyzer.Tests
         /// </summary>
         private void TestHeightEstimation()
         {
-            var selector = FindObjectOfType<StackRegionSelector>();
-            var estimator = FindObjectOfType<StackHeightEstimator>();
+            var selector = FindFirstObjectByType<StackRegionSelector>();
+            var estimator = FindFirstObjectByType<StackHeightEstimator>();
             
-            if (selector == null || estimator == null)
+            if (selector == null)
             {
-                Debug.LogWarning("[PhotoTestSetup] Required components not found");
+                Debug.LogWarning("[PhotoTestSetup] StackRegionSelector not found");
+                return;
+            }
+            
+            if (estimator == null)
+            {
+                Debug.LogWarning("[PhotoTestSetup] StackHeightEstimator not found");
                 return;
             }
             
             Rect[] regions = selector.GetAllRegions();
             if (regions.Length == 0)
             {
-                Debug.LogWarning("[PhotoTestSetup] No regions selected");
+                Debug.LogWarning("[PhotoTestSetup] No regions selected. Click 'Add Region' first, then drag to select chip stack areas.");
                 return;
             }
             
