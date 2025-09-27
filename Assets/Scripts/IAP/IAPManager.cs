@@ -1,14 +1,14 @@
 using UnityEngine;
 using UnityEngine.Purchasing;
-using UnityEngine.Purchasing.Security;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PokerChipAnalyzer.IAP
 {
     /// <summary>
     /// Manages in-app purchases and trial system
     /// </summary>
-    public class IAPManager : MonoBehaviour, IStoreListener
+    public class IAPManager : MonoBehaviour
     {
         [Header("IAP Settings")]
         [SerializeField] private string productId = "poker_chip_analyzer_full";
@@ -29,18 +29,18 @@ namespace PokerChipAnalyzer.IAP
         public int RemainingTrials => Mathf.Max(0, trialCount - GetUsedTrials());
         public bool HasTrialsLeft => RemainingTrials > 0;
         
-        private IStoreController storeController;
-        private IExtensionProvider extensionProvider;
+        private StoreController storeController;
+        private bool isInitialized = false;
         
-        private void Start()
+        private async void Start()
         {
-            InitializeIAP();
+            await InitializeIAP();
         }
         
         /// <summary>
-        /// Initialize IAP system
+        /// Initialize IAP system using Unity IAP v5 new API
         /// </summary>
-        private void InitializeIAP()
+        private async System.Threading.Tasks.Task InitializeIAP()
         {
             if (IsPurchased)
             {
@@ -49,13 +49,45 @@ namespace PokerChipAnalyzer.IAP
                 return;
             }
             
-            var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance());
-            builder.AddProduct(productId, ProductType.NonConsumable);
+            if (isInitialized)
+                return;
             
-            UnityPurchasing.Initialize(this, builder);
+            try
+            {
+                storeController = UnityIAPServices.StoreController();
+                
+                storeController.OnPurchasePending += OnPurchasePending;
+                storeController.OnPurchaseConfirmed += OnPurchaseConfirmed;
+                
+                await storeController.Connect();
+                
+                FetchProducts();
+                
+                isInitialized = true;
+                
+                if (enableDebugLogs)
+                    Debug.Log("[IAPManager] IAP initialized successfully");
+            }
+            catch (System.Exception e)
+            {
+                if (enableDebugLogs)
+                    Debug.LogError($"[IAPManager] IAP initialization failed: {e.Message}");
+                    
+                OnPurchaseFailedEvent?.Invoke($"Initialization failed: {e.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Fetch products from store
+        /// </summary>
+        private void FetchProducts()
+        {
+            var productsToFetch = new List<ProductDefinition>
+            {
+                new(productId, ProductType.NonConsumable)
+            };
             
-            if (enableDebugLogs)
-                Debug.Log("[IAPManager] IAP initialized");
+            storeController.FetchProducts(productsToFetch);
         }
         
         /// <summary>
@@ -96,7 +128,7 @@ namespace PokerChipAnalyzer.IAP
         }
         
         /// <summary>
-        /// Purchase the full version
+        /// Purchase the full version using Unity IAP v5 new API
         /// </summary>
         public void PurchaseFullVersion()
         {
@@ -112,10 +144,10 @@ namespace PokerChipAnalyzer.IAP
                 return;
             }
             
-            Product product = storeController.products.WithID(productId);
-            if (product != null && product.availableToPurchase)
+            var product = storeController.GetProducts().FirstOrDefault(p => p.definition.id == productId);
+            if (product != null)
             {
-                storeController.InitiatePurchase(product);
+                storeController.PurchaseProduct(product);
             }
             else
             {
@@ -124,99 +156,117 @@ namespace PokerChipAnalyzer.IAP
         }
         
         /// <summary>
-        /// Restore purchases (iOS)
+        /// Restore purchases using Unity IAP v5 new API
         /// </summary>
         public void RestorePurchases()
         {
-            if (extensionProvider != null)
+            if (storeController != null)
             {
-                extensionProvider.GetExtension<IAppleExtensions>().RestoreTransactions((success, error) =>
-                {
-                    if (enableDebugLogs)
-                        Debug.Log($"[IAPManager] Restore result: Success={success}, Error={error}");
-                });
+                storeController.RestoreTransactions(OnTransactionsRestored);
             }
-        }
-        
-        // IStoreListener implementation
-        public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
-        {
-            storeController = controller;
-            extensionProvider = extensions;
-            
-            if (enableDebugLogs)
-                Debug.Log("[IAPManager] Store initialized");
-        }
-        
-        public void OnInitializeFailed(InitializationFailureReason error)
-        {
-            if (enableDebugLogs)
-                Debug.LogError($"[IAPManager] Initialize failed: {error}");
-        }
-        public void OnInitializeFailed(InitializationFailureReason error, string message)
-        {
-            if (enableDebugLogs)
-                Debug.LogError($"[IAPManager] Initialize failed: {error}, Message: {message}");
-        }
-        
-        public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs args)
-        {
-            if (args.purchasedProduct.definition.id == productId)
-            {
-                // Validate purchase
-                if (ValidatePurchase(args.purchasedProduct))
-                {
-                    // Mark as purchased
-                    PlayerPrefs.SetInt(purchaseKey, 1);
-                    PlayerPrefs.Save();
-                    
-                    OnPurchaseSuccess?.Invoke();
-                    
-                    if (enableDebugLogs)
-                        Debug.Log("[IAPManager] Purchase successful");
-                }
-                else
-                {
-                    OnPurchaseFailedEvent?.Invoke("Purchase validation failed");
-                }
-            }
-            
-            return PurchaseProcessingResult.Complete;
-        }
-        
-        public void OnPurchaseFailed(Product product, PurchaseFailureReason failureReason)
-        {
-            OnPurchaseFailedEvent?.Invoke(failureReason.ToString());
-            
-            if (enableDebugLogs)
-                Debug.LogError($"[IAPManager] Purchase failed: {failureReason}");
         }
         
         /// <summary>
-        /// Validate purchase receipt
+        /// Handle transaction restore result
         /// </summary>
-        /// <param name="product">Purchased product</param>
-        /// <returns>True if valid</returns>
-        private bool ValidatePurchase(Product product)
+        private void OnTransactionsRestored(bool success, string error)
         {
-            // In production, validate with Apple/Google servers
+            if (enableDebugLogs)
+                Debug.Log($"[IAPManager] Restore result: Success={success}, Error={error}");
+        }
+        
+        /// <summary>
+        /// Handle purchase pending event
+        /// </summary>
+        private void OnPurchasePending(PendingOrder order)
+        {
+            if (enableDebugLogs)
+                Debug.Log($"[IAPManager] Purchase pending: {order.CartOrdered.Items().First().Product.definition.id}");
+            
+            // Validate purchase before confirming
+            if (ValidatePurchase(order))
+            {
+                // Confirm the purchase
+                storeController.ConfirmPurchase(order);
+            }
+            else
+            {
+                OnPurchaseFailedEvent?.Invoke("Purchase validation failed");
+            }
+        }
+        
+        /// <summary>
+        /// Handle purchase confirmed event
+        /// </summary>
+        private void OnPurchaseConfirmed(Order order)
+        {
+            switch (order)
+            {
+                case FailedOrder failedOrder:
+                    var failedProduct = failedOrder.CartOrdered.Items().First().Product.definition.id;
+                    OnPurchaseFailedEvent?.Invoke($"Purchase failed: {failedOrder.FailureReason}");
+                    
+                    if (enableDebugLogs)
+                        Debug.LogError($"[IAPManager] Purchase failed: {failedProduct}, {failedOrder.FailureReason}");
+                    break;
+                    
+                case ConfirmedOrder confirmedOrder:
+                    var productId = confirmedOrder.CartOrdered.Items().First().Product.definition.id;
+                    
+                    if (productId == this.productId)
+                    {
+                        // Mark as purchased
+                        PlayerPrefs.SetInt(purchaseKey, 1);
+                        PlayerPrefs.Save();
+                        
+                        OnPurchaseSuccess?.Invoke();
+                        
+                        if (enableDebugLogs)
+                            Debug.Log($"[IAPManager] Purchase successful: {productId}");
+                    }
+                    break;
+            }
+        }
+        
+        /// <summary>
+        /// Validate purchase order
+        /// </summary>
+        /// <param name="order">Purchase order to validate</param>
+        /// <returns>True if valid</returns>
+        private bool ValidatePurchase(PendingOrder order)
+        {
             // For MVP, we'll do basic validation
+            // In production, validate with Apple/Google servers
             
-            if (string.IsNullOrEmpty(product.receipt))
-            {
-                return false;
-            }
+            var product = order.CartOrdered.Items().First().Product;
             
-            // Basic receipt validation
-            try
-            {
-                var receipt = (Dictionary<string, object>)MiniJson.JsonDecode(product.receipt);
-                return receipt.ContainsKey("Store") && receipt.ContainsKey("TransactionID");
-            }
-            catch
-            {
+            // Basic validation - check if product ID matches
+            return product.definition.id == productId;
+        }
+        
+        /// <summary>
+        /// Check if product is available for purchase
+        /// </summary>
+        /// <returns>True if product is available</returns>
+        public bool IsProductAvailable()
+        {
+            if (!isInitialized || storeController == null)
                 return false;
-            }
+                
+            var product = storeController.GetProducts().FirstOrDefault(p => p.definition.id == productId);
+            return product != null;
+        }
+        
+        /// <summary>
+        /// Get product information
+        /// </summary>
+        /// <returns>Product info or null if not available</returns>
+        public Product GetProductInfo()
+        {
+            if (!isInitialized || storeController == null)
+                return null;
+                
+            return storeController.GetProducts().FirstOrDefault(p => p.definition.id == productId);
         }
         
         /// <summary>
