@@ -1,0 +1,276 @@
+# Poker Chip Analyzer - Cursor Rules
+
+## Project Overview
+Unity AR application for iPhone Pro with LiDAR technology to analyze poker chip stacks and calculate total values.
+
+## Technology Stack
+
+### Core Framework
+- **Unity**: 6000.1.11f1 (Tech Stream)
+- **Platform**: iOS 17+ (iPhone 12 Pro or newer with LiDAR)
+- **Build Target**: iPhone Pro with LiDAR sensor
+
+### AR & XR Packages
+- **AR Foundation**: 6.1.1
+- **ARKit XR Plugin**: 6.1.1
+- **XR Architecture**: Modern XROrigin (replaced deprecated ARSessionOrigin)
+
+### Additional Packages
+- **Unity IAP**: 5.0.1 (In-App Purchases)
+- **TextMeshPro**: Built-in package
+- **Universal Render Pipeline (URP)**: 17.1.0
+- **Input System**: 1.14.0
+
+### Development Environment
+- **IDE**: Cursor/VS Code with Unity extensions
+- **Version Control**: Git with GitHub
+- **Package Manager**: Unity Package Manager
+- **Build System**: Unity Build Pipeline
+
+## Architecture Overview
+
+### Folder Structure
+```
+Assets/Scripts/
+├── AR/                    # AR session and depth data
+├── Detection/             # Chip stack detection algorithms
+├── Domain/                # Business logic and data models
+├── UI/                    # User interface controllers
+├── IAP/                   # In-app purchase system
+└── SceneSetup.cs          # Automated scene configuration
+```
+
+### Core Components
+- **ARSessionController**: AR session lifecycle management
+- **DepthProvider**: LiDAR depth data access
+- **StackRegionSelector**: Manual ROI selection
+- **StackHeightEstimator**: Height calculation (3.3mm per chip)
+- **CalculationService**: Value calculation with confidence scoring
+- **IAPManager**: Trial system (3 free scans → paywall)
+
+## Coding Standards
+
+### Language & Comments
+- **Primary Language**: English only
+- **Comments**: Minimal comments, only when absolutely necessary
+- **Documentation**: Use XML documentation for public APIs
+- **Code Style**: Clean, self-documenting code
+
+### Naming Conventions
+- **Classes**: PascalCase (e.g., `ARSessionController`)
+- **Methods**: PascalCase (e.g., `InitializeAR()`)
+- **Variables**: camelCase (e.g., `chipCount`)
+- **Constants**: UPPER_CASE (e.g., `CHIP_THICKNESS_MM`)
+- **Private Fields**: camelCase with underscore prefix (e.g., `_isScanning`)
+
+### Unity Specific
+- **GameObjects**: Descriptive names (e.g., "XR Origin", "AR Camera")
+- **Components**: Use [SerializeField] for inspector fields
+- **Events**: Use System.Action for simple events
+- **Coroutines**: Use async/await when possible
+
+## AR & LiDAR Implementation
+
+### Core Algorithm
+```csharp
+// Chip count calculation
+chipCount = Mathf.RoundToInt(height_mm / 3.3f);
+confidence = CalculateConfidence(depthSamples);
+```
+
+### Key Constants
+- **Chip Thickness**: 3.3mm (adjustable 3.2-4.0mm)
+- **Scan Height**: 20-30cm above table
+- **Confidence Threshold**: 0.7
+- **Max Depth Distance**: 2.0m
+- **Sample Rate**: 30Hz
+
+### AR Session States
+- **None**: Initializing
+- **Ready**: AR ready
+- **SessionTracking**: Active scanning
+- **NotTracking**: Tracking lost
+
+## IAP System
+
+### Trial System
+- **Free Trials**: 3 scans
+- **Product ID**: "poker_chip_analyzer_full"
+- **Validation**: Basic receipt validation for MVP
+- **Platform**: iOS App Store
+
+### Purchase Flow
+1. Check trial count
+2. Validate purchase receipt
+3. Unlock full features
+4. Handle restore purchases
+
+## Performance Requirements
+
+### Target Metrics
+- **Scan Time**: ≤ 8 seconds
+- **Total Flow**: ≤ 20 seconds
+- **Accuracy**: MAE ≤ 1 chip per stack
+- **Battery**: ≤ 8% for 10 scans
+- **Memory**: Efficient depth sampling
+
+### Optimization Guidelines
+- Use object pooling for UI elements
+- Minimize depth sampling frequency
+- Cache calculation results
+- Implement temporal smoothing
+
+## Error Handling
+
+### AR Errors
+- LiDAR unavailable → Camera depth fallback
+- AR session failed → Device compatibility check
+- Tracking lost → Re-initialization
+
+### Calculation Errors
+- Invalid depth data → Confidence scoring
+- Unusual stack sizes → Warning indicators
+- Network issues → Offline mode
+
+## Testing Strategy
+
+### Unit Testing
+- Core algorithms (height calculation)
+- Confidence scoring
+- Value calculations
+
+### Integration Testing
+- AR session lifecycle
+- IAP flow
+- UI interactions
+
+### Device Testing
+- iPhone Pro with LiDAR
+- Various lighting conditions
+- Different chip stack configurations
+
+## Build Configuration
+
+### iOS Settings
+- **Minimum iOS Version**: 17.0
+- **Camera Usage**: "Required for chip analysis"
+- **LiDAR Access**: Automatic with AR Foundation
+- **Architecture**: ARM64
+
+### Unity Settings
+- **Scripting Backend**: IL2CPP
+- **Api Compatibility**: .NET Standard 2.1
+- **Target Device**: iPhone
+- **Graphics API**: Metal
+
+## Security & Privacy
+
+### Data Handling
+- **100% On-Device**: No cloud processing
+- **No Data Upload**: All calculations local
+- **Privacy First**: No user data collection
+- **Offline Capable**: Works without internet
+
+### Purchase Security
+- Receipt validation
+- Secure storage of purchase state
+- Anti-tampering measures
+
+## Development Workflow
+
+### Git Workflow
+- **Main Branch**: Stable releases
+- **Feature Branches**: New features
+- **Commit Messages**: Clear, descriptive
+- **Pull Requests**: Code review required
+
+### Unity Workflow
+- **Scene Setup**: Use SceneSetup script
+- **Package Updates**: Test compatibility
+- **Build Testing**: Regular device testing
+- **Performance**: Monitor metrics
+
+## Common Patterns
+
+### AR Component Setup
+```csharp
+// Initialize AR session
+var arSession = GetComponent<ARSession>();
+var arCameraManager = GetComponent<ARCameraManager>();
+var arMeshManager = GetComponent<ARMeshManager>();
+```
+
+### Event Handling
+```csharp
+// Simple event pattern
+public System.Action<float> OnHeightCalculated;
+OnHeightCalculated?.Invoke(height);
+```
+
+### Configuration
+```csharp
+// Inspector configuration
+[SerializeField] private float chipThickness = 3.3f;
+[SerializeField] private bool enableDebugLogs = true;
+```
+
+## Debugging Guidelines
+
+### Console Logging
+- Use consistent prefixes: `[ComponentName]`
+- Log important state changes
+- Include relevant data in logs
+- Use Debug.Log for development only
+
+### Performance Monitoring
+- Track frame rates during scanning
+- Monitor memory usage
+- Profile depth sampling performance
+- Measure battery consumption
+
+## Future Enhancements
+
+### Planned Features
+- Automatic chip denomination detection
+- Multiplayer synchronization
+- Cloud inference options
+- Advanced confidence algorithms
+
+### Technical Debt
+- Upgrade to Unity IAP v5
+- Implement full XROrigin integration
+- Add comprehensive unit tests
+- Optimize depth sampling algorithms
+
+## Resources & Documentation
+
+### Unity Documentation
+- AR Foundation: https://docs.unity3d.com/Packages/com.unity.xr.arfoundation@latest/
+- ARKit: https://docs.unity3d.com/Packages/com.unity.xr.arkit@latest/
+- IAP: https://docs.unity3d.com/Manual/UnityIAP.html
+
+### Apple Documentation
+- ARKit: https://developer.apple.com/documentation/arkit/
+- LiDAR: https://developer.apple.com/documentation/arkit/arworldtrackingconfiguration
+
+## Code Quality Standards
+
+### Readability
+- Clear variable names
+- Logical code organization
+- Consistent formatting
+- Minimal nesting
+
+### Maintainability
+- Single responsibility principle
+- Dependency injection where appropriate
+- Modular architecture
+- Easy to test
+
+### Performance
+- Efficient algorithms
+- Minimal allocations
+- Cached calculations
+- Optimized rendering
+
+Remember: This is an MVP focused on core functionality. Prioritize working features over perfect architecture. Code should be clean, functional, and ready for production deployment.
