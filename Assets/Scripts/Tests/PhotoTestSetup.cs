@@ -125,6 +125,41 @@ namespace PokerChipAnalyzer.Tests
         }
         
         /// <summary>
+        /// Create selection box prefab for region selection
+        /// </summary>
+        /// <returns>Selection box prefab GameObject</returns>
+        private GameObject CreateSelectionBoxPrefab()
+        {
+            GameObject selectionBoxGO = new GameObject("SelectionBoxPrefab");
+            
+            // Add Image component
+            Image selectionImage = selectionBoxGO.AddComponent<Image>();
+            selectionImage.color = new Color(0f, 1f, 0f, 0.3f); // Semi-transparent green
+            
+            // Add RectTransform
+            RectTransform rectTransform = selectionBoxGO.GetComponent<RectTransform>();
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+            
+            // Add border effect (optional)
+            GameObject borderGO = new GameObject("Border");
+            borderGO.transform.SetParent(selectionBoxGO.transform);
+            Image borderImage = borderGO.AddComponent<Image>();
+            borderImage.color = Color.green;
+            
+            RectTransform borderRect = borderGO.GetComponent<RectTransform>();
+            borderRect.anchorMin = Vector2.zero;
+            borderRect.anchorMax = Vector2.one;
+            borderRect.offsetMin = Vector2.zero;
+            borderRect.offsetMax = Vector2.zero;
+            
+            Debug.Log("[PhotoTestSetup] Created selection box prefab");
+            return selectionBoxGO;
+        }
+        
+        /// <summary>
         /// Create a button with callback
         /// </summary>
         private void CreateButton(GameObject parent, string text, Vector2 anchorPos, System.Action onClick)
@@ -180,16 +215,27 @@ namespace PokerChipAnalyzer.Tests
                 Debug.Log("[PhotoTestSetup] Created StackRegionSelector");
             }
             
-            // Setup canvas reference for StackRegionSelector
+            // Setup canvas reference and selection box prefab for StackRegionSelector
             if (selector != null)
             {
                 // Use reflection to set private field (for testing)
-                var field = typeof(StackRegionSelector).GetField("selectionCanvas", 
+                var canvasField = typeof(StackRegionSelector).GetField("selectionCanvas", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (field != null)
+                if (canvasField != null)
                 {
-                    field.SetValue(selector, canvas.GetComponent<RectTransform>());
+                    canvasField.SetValue(selector, canvas.GetComponent<RectTransform>());
                     Debug.Log("[PhotoTestSetup] Set selectionCanvas for StackRegionSelector");
+                }
+                
+                // Create selection box prefab
+                GameObject selectionBoxPrefab = CreateSelectionBoxPrefab();
+                
+                var prefabField = typeof(StackRegionSelector).GetField("selectionBoxPrefab", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (prefabField != null)
+                {
+                    prefabField.SetValue(selector, selectionBoxPrefab.GetComponent<Image>());
+                    Debug.Log("[PhotoTestSetup] Set selectionBoxPrefab for StackRegionSelector");
                 }
             }
             
