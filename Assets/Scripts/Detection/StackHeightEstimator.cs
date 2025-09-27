@@ -17,6 +17,10 @@ namespace PokerChipAnalyzer.Detection
         [SerializeField] private int samplePoints = 9; // 3x3 grid
         [SerializeField] private float confidenceThreshold = 0.7f;
         
+        [Header("Testing")]
+        [SerializeField] private bool useSimulatedData = false;
+        [SerializeField] private float simulatedHeight = 33.0f; // 10 chips * 3.3mm
+        
         [Header("Debug")]
         [SerializeField] private bool enableDebugLogs = true;
         
@@ -53,7 +57,7 @@ namespace PokerChipAnalyzer.Detection
         {
             if (depthProvider == null)
             {
-                depthProvider = FindObjectOfType<DepthProvider>();
+                depthProvider = FindFirstObjectByType<DepthProvider>();
             }
             
             if (enableDebugLogs)
@@ -132,6 +136,12 @@ namespace PokerChipAnalyzer.Detection
         /// <returns>Array of depth values</returns>
         private float[] SampleDepthsInRegion(Rect region)
         {
+            // Use simulated data for testing
+            if (useSimulatedData)
+            {
+                return GenerateSimulatedDepths(region);
+            }
+            
             System.Collections.Generic.List<float> depths = new System.Collections.Generic.List<float>();
             
             int samplesPerAxis = Mathf.RoundToInt(Mathf.Sqrt(samplePoints));
@@ -154,6 +164,46 @@ namespace PokerChipAnalyzer.Detection
                     }
                 }
             }
+            
+            return depths.ToArray();
+        }
+        
+        /// <summary>
+        /// Generate simulated depth data for testing
+        /// </summary>
+        /// <param name="region">Selected region</param>
+        /// <returns>Simulated depth values</returns>
+        private float[] GenerateSimulatedDepths(Rect region)
+        {
+            // Simulate table depth (2 meters)
+            float tableDepth = 2.0f;
+            // Simulate stack height (convert mm to meters)
+            float stackHeight = simulatedHeight / 1000f;
+            
+            // Generate realistic depth samples
+            System.Collections.Generic.List<float> depths = new System.Collections.Generic.List<float>();
+            
+            // Add table samples (bottom 30%)
+            for (int i = 0; i < samplePoints * 3 / 10; i++)
+            {
+                depths.Add(tableDepth + Random.Range(-0.01f, 0.01f)); // Small variation
+            }
+            
+            // Add stack samples (middle 40%)
+            for (int i = 0; i < samplePoints * 4 / 10; i++)
+            {
+                float stackDepth = tableDepth + stackHeight * Random.Range(0.2f, 0.8f);
+                depths.Add(stackDepth + Random.Range(-0.005f, 0.005f));
+            }
+            
+            // Add top samples (top 30%)
+            for (int i = 0; i < samplePoints * 3 / 10; i++)
+            {
+                depths.Add(tableDepth + stackHeight + Random.Range(-0.002f, 0.002f));
+            }
+            
+            if (enableDebugLogs)
+                Debug.Log($"[StackHeightEstimator] Generated {depths.Count} simulated depth samples");
             
             return depths.ToArray();
         }

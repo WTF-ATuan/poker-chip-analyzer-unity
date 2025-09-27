@@ -64,23 +64,46 @@ namespace PokerChipAnalyzer.Detection
         }
         
         /// <summary>
-        /// Handle user input for region selection
+        /// Handle user input for region selection (supports both touch and mouse)
         /// </summary>
         private void HandleInput()
         {
             if (!IsSelecting) return;
             
-            if (Input.GetMouseButtonDown(0))
+            // Handle touch input (mobile)
+            if (Input.touchCount > 0)
             {
-                StartSelection();
+                Touch touch = Input.GetTouch(0);
+                
+                switch (touch.phase)
+                {
+                    case TouchPhase.Began:
+                        StartSelection(touch.position);
+                        break;
+                    case TouchPhase.Moved:
+                        UpdateSelection(touch.position);
+                        break;
+                    case TouchPhase.Ended:
+                    case TouchPhase.Canceled:
+                        FinishSelection(touch.position);
+                        break;
+                }
             }
-            else if (Input.GetMouseButton(0))
+            // Handle mouse input (editor/desktop)
+            else
             {
-                UpdateSelection();
-            }
-            else if (Input.GetMouseButtonUp(0))
-            {
-                FinishSelection();
+                if (Input.GetMouseButtonDown(0))
+                {
+                    StartSelection(Input.mousePosition);
+                }
+                else if (Input.GetMouseButton(0))
+                {
+                    UpdateSelection(Input.mousePosition);
+                }
+                else if (Input.GetMouseButtonUp(0))
+                {
+                    FinishSelection(Input.mousePosition);
+                }
             }
         }
         
@@ -96,12 +119,12 @@ namespace PokerChipAnalyzer.Detection
         /// <summary>
         /// Start drawing a new selection
         /// </summary>
-        private void StartSelection()
+        /// <param name="inputPosition">Input position (touch or mouse)</param>
+        private void StartSelection(Vector2 inputPosition)
         {
-            Vector2 mousePos = Input.mousePosition;
             Vector2 normalizedPos = new Vector2(
-                mousePos.x / Screen.width,
-                mousePos.y / Screen.height
+                inputPosition.x / Screen.width,
+                inputPosition.y / Screen.height
             );
             
             selectionStart = normalizedPos;
@@ -117,14 +140,14 @@ namespace PokerChipAnalyzer.Detection
         /// <summary>
         /// Update current selection box
         /// </summary>
-        private void UpdateSelection()
+        /// <param name="inputPosition">Input position (touch or mouse)</param>
+        private void UpdateSelection(Vector2 inputPosition)
         {
             if (currentSelectionBox == null) return;
             
-            Vector2 mousePos = Input.mousePosition;
             Vector2 normalizedPos = new Vector2(
-                mousePos.x / Screen.width,
-                mousePos.y / Screen.height
+                inputPosition.x / Screen.width,
+                inputPosition.y / Screen.height
             );
             
             // Calculate selection rectangle
@@ -147,14 +170,14 @@ namespace PokerChipAnalyzer.Detection
         /// <summary>
         /// Finish current selection
         /// </summary>
-        private void FinishSelection()
+        /// <param name="inputPosition">Input position (touch or mouse)</param>
+        private void FinishSelection(Vector2 inputPosition)
         {
             if (currentSelectionBox == null) return;
             
-            Vector2 mousePos = Input.mousePosition;
             Vector2 normalizedPos = new Vector2(
-                mousePos.x / Screen.width,
-                mousePos.y / Screen.height
+                inputPosition.x / Screen.width,
+                inputPosition.y / Screen.height
             );
             
             // Calculate final selection rectangle
