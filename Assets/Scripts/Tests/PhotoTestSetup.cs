@@ -43,58 +43,6 @@ namespace PokerChipAnalyzer.Tests
         }
         
         /// <summary>
-        /// Force setup components regardless of auto setup setting
-        /// </summary>
-        [ContextMenu("Force Setup Components")]
-        public void ForceSetupComponents()
-        {
-            Debug.Log("[PhotoTestSetup] Force setting up components...");
-            SetupComponents();
-            
-            if (bindExistingButtons)
-            {
-                BindExistingButtons();
-            }
-            
-            Debug.Log("[PhotoTestSetup] Force setup complete!");
-        }
-        
-        /// <summary>
-        /// Check current setup status
-        /// </summary>
-        [ContextMenu("Check Setup Status")]
-        public void CheckSetupStatus()
-        {
-            Debug.Log("=== PhotoTestSetup Status ===");
-            Debug.Log($"Auto Setup: {autoSetup}");
-            Debug.Log($"Create New UI: {createNewUI}");
-            Debug.Log($"Bind Existing Buttons: {bindExistingButtons}");
-            
-            // Check components
-            var selector = FindFirstObjectByType<StackRegionSelector>();
-            var estimator = FindFirstObjectByType<StackHeightEstimator>();
-            var testManager = FindFirstObjectByType<PhotoTestManager>();
-            var canvas = FindFirstObjectByType<Canvas>();
-            
-            Debug.Log($"Canvas found: {canvas != null}");
-            Debug.Log($"StackRegionSelector found: {selector != null}");
-            Debug.Log($"StackHeightEstimator found: {estimator != null}");
-            Debug.Log($"PhotoTestManager found: {testManager != null}");
-            
-            // Check button bindings
-            if (addRegionButton != null)
-            {
-                Debug.Log($"Add Region Button: {addRegionButton.name} (Listeners: {addRegionButton.onClick.GetPersistentEventCount()})");
-            }
-            else
-            {
-                Debug.Log("Add Region Button: Not assigned");
-            }
-            
-            Debug.Log("=== End Status ===");
-        }
-        
-        /// <summary>
         /// Bind manually assigned buttons
         /// </summary>
         [ContextMenu("Bind Manual Buttons")]
@@ -342,9 +290,25 @@ namespace PokerChipAnalyzer.Tests
         {
             GameObject selectionBoxGO = new GameObject("SelectionBoxPrefab");
             
-            // Add Image component
+            // Add Image component with hollow shader
             Image selectionImage = selectionBoxGO.AddComponent<Image>();
-            selectionImage.color = new Color(0f, 1f, 0f, 0.3f); // Semi-transparent green
+            
+            // Try to load the custom shader
+            Shader hollowShader = Shader.Find("Custom/SelectionBox");
+            if (hollowShader != null)
+            {
+                Material hollowMaterial = new Material(hollowShader);
+                hollowMaterial.SetColor("_Color", new Color(0f, 1f, 0f, 0.8f));
+                hollowMaterial.SetFloat("_BorderWidth", 0.02f);
+                selectionImage.material = hollowMaterial;
+                Debug.Log("[PhotoTestSetup] Using hollow selection shader");
+            }
+            else
+            {
+                // Fallback to semi-transparent
+                selectionImage.color = new Color(0f, 1f, 0f, 0.3f);
+                Debug.LogWarning("[PhotoTestSetup] Hollow shader not found, using fallback");
+            }
             
             // Add RectTransform
             RectTransform rectTransform = selectionBoxGO.GetComponent<RectTransform>();
@@ -353,19 +317,7 @@ namespace PokerChipAnalyzer.Tests
             rectTransform.offsetMin = Vector2.zero;
             rectTransform.offsetMax = Vector2.zero;
             
-            // Add border effect (optional)
-            GameObject borderGO = new GameObject("Border");
-            borderGO.transform.SetParent(selectionBoxGO.transform);
-            Image borderImage = borderGO.AddComponent<Image>();
-            borderImage.color = Color.green;
-            
-            RectTransform borderRect = borderGO.GetComponent<RectTransform>();
-            borderRect.anchorMin = Vector2.zero;
-            borderRect.anchorMax = Vector2.one;
-            borderRect.offsetMin = Vector2.zero;
-            borderRect.offsetMax = Vector2.zero;
-            
-            Debug.Log("[PhotoTestSetup] Created selection box prefab");
+            Debug.Log("[PhotoTestSetup] Created hollow selection box prefab");
             return selectionBoxGO;
         }
         

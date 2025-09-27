@@ -958,6 +958,8 @@ MonoBehaviour:
   smoothingFactor: 0.1
   samplePoints: 9
   confidenceThreshold: 0.7
+  useSimulatedData: 0
+  simulatedHeight: 33
   enableDebugLogs: 1
 --- !u!4 &1809659785
 Transform:

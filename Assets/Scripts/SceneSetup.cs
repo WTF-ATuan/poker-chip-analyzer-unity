@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 using PokerChipAnalyzer.AR;
@@ -235,6 +237,43 @@ namespace PokerChipAnalyzer
         /// </summary>
         private void SetupUI()
         {
+            // Create main UI Canvas
+            GameObject canvasGO = GameObject.Find("Main UI Canvas");
+            if (canvasGO == null)
+            {
+                canvasGO = new GameObject("Main UI Canvas");
+                Canvas canvas = canvasGO.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvasGO.AddComponent<CanvasScaler>();
+                canvasGO.AddComponent<GraphicRaycaster>();
+            }
+            
+            // Create HUD Panel
+            GameObject hudPanelGO = GameObject.Find("HUD Panel");
+            if (hudPanelGO == null)
+            {
+                hudPanelGO = new GameObject("HUD Panel");
+                hudPanelGO.transform.SetParent(canvasGO.transform);
+                
+                RectTransform hudRect = hudPanelGO.AddComponent<RectTransform>();
+                hudRect.anchorMin = new Vector2(0f, 0f);
+                hudRect.anchorMax = new Vector2(1f, 1f);
+                hudRect.offsetMin = Vector2.zero;
+                hudRect.offsetMax = Vector2.zero;
+            }
+            
+            // Create scanning area overlay
+            CreateScanningArea(hudPanelGO);
+            
+            // Create control buttons
+            CreateControlButtons(hudPanelGO);
+            
+            // Create status display
+            CreateStatusDisplay(hudPanelGO);
+            
+            // Create results panel
+            CreateResultsPanel(hudPanelGO);
+            
             // HUD Controller
             GameObject hudGO = GameObject.Find("HUD Controller");
             if (hudGO == null)
@@ -263,6 +302,199 @@ namespace PokerChipAnalyzer
             
             if (enableDebugLogs)
                 Debug.Log("[SceneSetup] UI components setup complete");
+        }
+        
+        /// <summary>
+        /// Create scanning area overlay
+        /// </summary>
+        private void CreateScanningArea(GameObject parent)
+        {
+            GameObject scanningAreaGO = new GameObject("Scanning Area");
+            scanningAreaGO.transform.SetParent(parent.transform);
+            
+            RectTransform scanningRect = scanningAreaGO.AddComponent<RectTransform>();
+            scanningRect.anchorMin = new Vector2(0.1f, 0.1f);
+            scanningRect.anchorMax = new Vector2(0.9f, 0.9f);
+            scanningRect.offsetMin = Vector2.zero;
+            scanningRect.offsetMax = Vector2.zero;
+            
+            // Add border image
+            Image borderImage = scanningAreaGO.AddComponent<Image>();
+            borderImage.color = new Color(0f, 1f, 0f, 0.3f); // Semi-transparent green
+            
+            // Create corner markers
+            CreateCornerMarkers(scanningAreaGO);
+        }
+        
+        /// <summary>
+        /// Create corner markers for scanning area
+        /// </summary>
+        private void CreateCornerMarkers(GameObject parent)
+        {
+            Vector2[] corners = {
+                new Vector2(0f, 1f), // Top-left
+                new Vector2(1f, 1f), // Top-right
+                new Vector2(0f, 0f), // Bottom-left
+                new Vector2(1f, 0f)  // Bottom-right
+            };
+            
+            for (int i = 0; i < corners.Length; i++)
+            {
+                GameObject cornerGO = new GameObject($"Corner_{i}");
+                cornerGO.transform.SetParent(parent.transform);
+                
+                Image cornerImage = cornerGO.AddComponent<Image>();
+                cornerImage.color = Color.green;
+                
+                RectTransform cornerRect = cornerGO.GetComponent<RectTransform>();
+                cornerRect.anchorMin = corners[i];
+                cornerRect.anchorMax = corners[i];
+                cornerRect.sizeDelta = new Vector2(20f, 20f);
+                cornerRect.anchoredPosition = Vector2.zero;
+            }
+        }
+        
+        /// <summary>
+        /// Create control buttons
+        /// </summary>
+        private void CreateControlButtons(GameObject parent)
+        {
+            GameObject buttonPanelGO = new GameObject("Control Buttons");
+            buttonPanelGO.transform.SetParent(parent.transform);
+            
+            RectTransform buttonRect = buttonPanelGO.AddComponent<RectTransform>();
+            buttonRect.anchorMin = new Vector2(0f, 0f);
+            buttonRect.anchorMax = new Vector2(1f, 0.15f);
+            buttonRect.offsetMin = Vector2.zero;
+            buttonRect.offsetMax = Vector2.zero;
+            
+            // Add background
+            Image buttonBg = buttonPanelGO.AddComponent<Image>();
+            buttonBg.color = new Color(0f, 0f, 0f, 0.7f);
+            
+            // Create buttons
+            CreateButton(buttonPanelGO, "Start Scan", new Vector2(0.1f, 0.5f), () => {
+                Debug.Log("[SceneSetup] Start Scan clicked");
+            });
+            
+            CreateButton(buttonPanelGO, "Add Region", new Vector2(0.3f, 0.5f), () => {
+                var selector = FindFirstObjectByType<StackRegionSelector>();
+                if (selector != null) selector.StartRegionSelection();
+            });
+            
+            CreateButton(buttonPanelGO, "Clear All", new Vector2(0.5f, 0.5f), () => {
+                var selector = FindFirstObjectByType<StackRegionSelector>();
+                if (selector != null) selector.ClearAllRegions();
+            });
+            
+            CreateButton(buttonPanelGO, "Calculate", new Vector2(0.7f, 0.5f), () => {
+                Debug.Log("[SceneSetup] Calculate clicked");
+            });
+        }
+        
+        /// <summary>
+        /// Create status display
+        /// </summary>
+        private void CreateStatusDisplay(GameObject parent)
+        {
+            GameObject statusGO = new GameObject("Status Display");
+            statusGO.transform.SetParent(parent.transform);
+            
+            RectTransform statusRect = statusGO.AddComponent<RectTransform>();
+            statusRect.anchorMin = new Vector2(0f, 0.85f);
+            statusRect.anchorMax = new Vector2(1f, 1f);
+            statusRect.offsetMin = Vector2.zero;
+            statusRect.offsetMax = Vector2.zero;
+            
+            // Add background
+            Image statusBg = statusGO.AddComponent<Image>();
+            statusBg.color = new Color(0f, 0f, 0f, 0.5f);
+            
+            // Add status text
+            GameObject statusTextGO = new GameObject("Status Text");
+            statusTextGO.transform.SetParent(statusGO.transform);
+            
+            TextMeshProUGUI statusText = statusTextGO.AddComponent<TextMeshProUGUI>();
+            statusText.text = "Ready to scan poker chips";
+            statusText.fontSize = 18;
+            statusText.color = Color.white;
+            statusText.alignment = TextAlignmentOptions.Center;
+            
+            RectTransform statusTextRect = statusTextGO.GetComponent<RectTransform>();
+            statusTextRect.anchorMin = Vector2.zero;
+            statusTextRect.anchorMax = Vector2.one;
+            statusTextRect.offsetMin = Vector2.zero;
+            statusTextRect.offsetMax = Vector2.zero;
+        }
+        
+        /// <summary>
+        /// Create results panel
+        /// </summary>
+        private void CreateResultsPanel(GameObject parent)
+        {
+            GameObject resultsGO = new GameObject("Results Panel");
+            resultsGO.transform.SetParent(parent.transform);
+            
+            RectTransform resultsRect = resultsGO.AddComponent<RectTransform>();
+            resultsRect.anchorMin = new Vector2(0.7f, 0.2f);
+            resultsRect.anchorMax = new Vector2(1f, 0.8f);
+            resultsRect.offsetMin = Vector2.zero;
+            resultsRect.offsetMax = Vector2.zero;
+            
+            // Add background
+            Image resultsBg = resultsGO.AddComponent<Image>();
+            resultsBg.color = new Color(0f, 0f, 0f, 0.8f);
+            
+            // Add results text
+            GameObject resultsTextGO = new GameObject("Results Text");
+            resultsTextGO.transform.SetParent(resultsGO.transform);
+            
+            TextMeshProUGUI resultsText = resultsTextGO.AddComponent<TextMeshProUGUI>();
+            resultsText.text = "Results will appear here";
+            resultsText.fontSize = 14;
+            resultsText.color = Color.white;
+            resultsText.alignment = TextAlignmentOptions.TopLeft;
+            
+            RectTransform resultsTextRect = resultsTextGO.GetComponent<RectTransform>();
+            resultsTextRect.anchorMin = Vector2.zero;
+            resultsTextRect.anchorMax = Vector2.one;
+            resultsTextRect.offsetMin = new Vector2(10f, 10f);
+            resultsTextRect.offsetMax = new Vector2(-10f, -10f);
+        }
+        
+        /// <summary>
+        /// Create a button with callback
+        /// </summary>
+        private void CreateButton(GameObject parent, string text, Vector2 anchorPos, System.Action onClick)
+        {
+            GameObject buttonGO = new GameObject($"Button_{text}");
+            buttonGO.transform.SetParent(parent.transform);
+            
+            Button button = buttonGO.AddComponent<Button>();
+            Image buttonImage = buttonGO.AddComponent<Image>();
+            buttonImage.color = new Color(0.2f, 0.6f, 1f, 0.8f);
+            
+            RectTransform buttonRect = buttonGO.GetComponent<RectTransform>();
+            buttonRect.anchorMin = anchorPos;
+            buttonRect.anchorMax = anchorPos + new Vector2(0.15f, 0.3f);
+            buttonRect.offsetMin = Vector2.zero;
+            buttonRect.offsetMax = Vector2.zero;
+            
+            GameObject textGO = new GameObject("Text");
+            textGO.transform.SetParent(buttonGO.transform);
+            TextMeshProUGUI buttonText = textGO.AddComponent<TextMeshProUGUI>();
+            buttonText.text = text;
+            buttonText.fontSize = 12;
+            buttonText.color = Color.white;
+            buttonText.alignment = TextAlignmentOptions.Center;
+            
+            RectTransform textRect = textGO.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+            
+            button.onClick.AddListener(() => onClick());
         }
         
         /// <summary>
@@ -303,7 +535,7 @@ namespace PokerChipAnalyzer
             }
             
             // Remove all custom components
-            ARSessionController[] controllers = FindObjectsOfType<ARSessionController>();
+            ARSessionController[] controllers = FindObjectsByType<ARSessionController>(FindObjectsSortMode.None);
             foreach (var controller in controllers)
             {
                 DestroyImmediate(controller.gameObject);
